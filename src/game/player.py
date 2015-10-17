@@ -23,7 +23,6 @@ class Player(BasePlayer):
         self.hubInRegion = HUBS/(GRAPH_SIZE/((SCORE_MEAN/DECAY_FACTOR)**2))
         self.stations = []
         self.weights = state.get_graph().copy()
-        self.num_stations_built = 0
         for i in xrange(GRAPH_SIZE):
             self.weights.node[i]["weight"] = 0
         return
@@ -69,22 +68,27 @@ class Player(BasePlayer):
             station = graph.nodes()[center]
             self.stations += [station]
             commands.append(self.build_command(center))
-            self.num_stations_built += 1
 
         # Update our copy of the graph
         self.update_graph(state)
         
         # Build additional stations
-        if (self.profit(state) > 0 and state.get_money() > self.cost()):
-            new_station = self.find_hub()
-            commands.append(self.build_command(new_station))
+        if (self.profit(state) > 0 and state.get_money() > self.cost() and
+            len(self.stations) < HUBS + 1):
+            new_station = self.find_hub(state)
+            if new_station != None:
+                print "stations", self.stations
+                print "new_station", new_station
+                self.stations += [new_station]
+                commands.append(self.build_command(new_station))
             # update graph values with placement of new station
 
         # Fulfill orders
         pending_orders = state.get_pending_orders()
         if len(pending_orders) != 0:
             order = random.choice(pending_orders)
-            path = nx.shortest_path(graph, self.stations[0], order.get_node())
+            station = self.find_nearest_station()
+            path = nx.shortest_path(graph, station, order.get_node())
             if self.path_is_valid(state, path):
                 commands.append(self.send_command(order, path))
 
@@ -117,29 +121,28 @@ class Player(BasePlayer):
         return (num_orders_fulfilled * profit_per_order) - self.cost()
     
     def cost(self):
-        return INIT_BUILD_COST * (BUILD_FACTOR ** self.num_stations_built)
+        return INIT_BUILD_COST * (BUILD_FACTOR ** len(self.stations))
     
     
-    def find_hub(self):
-        listNodes = nx.nodes(self.graph)
+    def find_hub(self, state):
+        listNodes = nx.nodes(self.weights)
         def nodeWeightCmp(node1, node2):
-            return self.graph.node[node2]["weight"] - \
-            self.graph.node[node1]["weight"]
+            return int(self.weights.node[node2]["weight"] - \
+            self.weights.node[node1]["weight"])
         listNodes.sort(nodeWeightCmp)
         for posHub in listNodes:
-            if (self.min_distance_to_station(posHub) == None or 
-                self.min_distance_to_station(posHub) > ORDER_VAR**0.5):
+            min_dist = self.min_distance_to_station(posHub, state)
+            if (min_dist == None or min_dist > ORDER_VAR**0.5):
                 return posHub
         return None
 
-
-
-    def min_distance_to_station(self, node):
+    def min_distance_to_station(self, node, state):
         dist = None
         for station in self.stations:
-            distTemp = shortest_path(node,station)
+            distTemp = len(nx.shortest_path(state.get_graph(), node,station)) - 1
             if (dist == None or distTemp<dist):
                 dist = distTemp
         return dist
 
-
+    def find_nearest_station(self):
+        return
