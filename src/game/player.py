@@ -22,6 +22,7 @@ class Player(BasePlayer):
         self.hubInRegion = HUBS/(GRAPH_SIZE/((SCORE_MEAN/DECAY_FACTOR)**2))
         self.stations = []
         self.weights = state.get_graph().copy()
+        self.num_stations_built = 0
         return
 
     # Checks if we can use a given path
@@ -75,3 +76,9 @@ class Player(BasePlayer):
                 commands.append(self.send_command(order, path))
 
         return commands
+    
+    def profit(self):
+        num_orders_fulfilled = ((GAME_LENGTH - state.get_time())*ORDER_CHANCE) / HUBS
+        profit_per_order = SCORE_MEAN - (DECAY_FACTOR * ORDER_VAR)
+        cost = INIT_BUILD_COST * (BUILD_FACTOR ** self.num_stations_built)
+        return (num_orders_fulfilled * profit_per_order) - cost
