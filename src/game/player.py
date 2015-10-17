@@ -85,9 +85,9 @@ class Player(BasePlayer):
 
         # Fulfill orders
         pending_orders = state.get_pending_orders()
-        if len(pending_orders) != 0:
-            order = random.choice(pending_orders)
-            station = self.find_nearest_station()
+        for order in pending_orders:
+            station = self.find_nearest_station(order.node, state)
+            if station == None: continue
             path = nx.shortest_path(graph, station, order.get_node())
             if self.path_is_valid(state, path):
                 commands.append(self.send_command(order, path))
@@ -144,5 +144,14 @@ class Player(BasePlayer):
                 dist = distTemp
         return dist
 
-    def find_nearest_station(self):
-        return
+    def find_nearest_station(self, node, state):
+        dist = None
+        stn = None
+        for station in self.stations:
+            distTemp = len(nx.shortest_path(state.get_graph(), node,station)) - 1
+            if (dist == None or distTemp<dist):
+                dist = distTemp
+                stn = station
+        if dist < (2*ORDER_VAR**0.5):
+            return station
+        return None
