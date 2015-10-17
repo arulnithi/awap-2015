@@ -86,7 +86,7 @@ class Player(BasePlayer):
         # Fulfill orders
         pending_orders = state.get_pending_orders()
         for order in pending_orders:
-            station = self.find_nearest_station(order.node, state)
+            station = self.find_nearest_station(order.node, state, order.get_money())
             if station == None: continue
             path = nx.shortest_path(graph, station, order.get_node())
             if self.path_is_valid(state, path):
@@ -132,7 +132,7 @@ class Player(BasePlayer):
         listNodes.sort(nodeWeightCmp)
         for posHub in listNodes:
             min_dist = self.min_distance_to_station(posHub, state)
-            if (min_dist == None or min_dist > ORDER_VAR**0.5):
+            if (min_dist == None or min_dist > 2*ORDER_VAR**0.5):
                 return posHub
         return None
 
@@ -144,7 +144,7 @@ class Player(BasePlayer):
                 dist = distTemp
         return dist
 
-    def find_nearest_station(self, node, state):
+    def find_nearest_station(self, node, state, money):
         dist = None
         stn = None
         for station in self.stations:
@@ -152,6 +152,6 @@ class Player(BasePlayer):
             if (dist == None or distTemp<dist):
                 dist = distTemp
                 stn = station
-        if dist < (2*ORDER_VAR**0.5):
+        if dist < (money/DECAY_FACTOR):
             return stn
         return None
