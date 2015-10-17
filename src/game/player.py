@@ -74,6 +74,10 @@ class Player(BasePlayer):
             self.num_stations_built += 1
 
         self.update_graph(state)
+        
+        if (self.profit(state) > 0 and state.get_money() > self.cost()):
+            self.find_hub()
+            #build station()
 
         pending_orders = state.get_pending_orders()
         if len(pending_orders) != 0:
@@ -105,8 +109,13 @@ class Player(BasePlayer):
             for i in xrange(GRAPH_SIZE):
                 print i, self.weights.node[i]["weight"]
     
-    def profit(self):
+    def profit(self, state):
         num_orders_fulfilled = ((GAME_LENGTH - state.get_time())*ORDER_CHANCE) / HUBS
         profit_per_order = SCORE_MEAN - (DECAY_FACTOR * ORDER_VAR)
-        cost = INIT_BUILD_COST * (BUILD_FACTOR ** self.num_stations_built)
-        return (num_orders_fulfilled * profit_per_order) - cost
+        return (num_orders_fulfilled * profit_per_order) - self.cost()
+    
+    def cost(self):
+        return INIT_BUILD_COST * (BUILD_FACTOR ** self.num_stations_built)
+    
+    def find_hub(self):
+        return 0
