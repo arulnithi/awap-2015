@@ -118,5 +118,27 @@ class Player(BasePlayer):
     def cost(self):
         return INIT_BUILD_COST * (BUILD_FACTOR ** self.num_stations_built)
     
+    
     def find_hub(self):
-        return 0
+        listNodes = nx.nodes(self.graph)
+        def nodeWeightCmp(node1, node2):
+            return self.graph.node[node2]["weight"] - \
+            self.graph.node[node1]["weight"]
+        listNodes.sort(nodeWeightCmp)
+        for posHub in listNodes:
+            if (self.min_distance_to_station(posHub) == None or 
+                self.min_distance_to_station(posHub) > ORDER_VAR**0.5):
+                return posHub
+        return None
+
+
+
+    def min_distance_to_station(self, node):
+        dist = None
+        for station in self.stations:
+            distTemp = shortest_path(node,station)
+            if (dist == None or distTemp<dist):
+                dist = distTemp
+        return dist
+
+
