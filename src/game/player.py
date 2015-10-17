@@ -38,6 +38,7 @@ class Player(BasePlayer):
     def normal(self, distance):
         return 1/((ORDER_VAR*2*math.pi)**0.5)*math.exp(-(distance**2/(2*ORDER_VAR)))
 
+
     def step(self, state):
         """
         Determine actions based on the current state of the city. Called every
