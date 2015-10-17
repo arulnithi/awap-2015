@@ -153,5 +153,5 @@ class Player(BasePlayer):
                 dist = distTemp
                 stn = station
         if dist < (2*ORDER_VAR**0.5):
-            return station
+            return stn
         return None
