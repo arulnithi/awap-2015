@@ -23,6 +23,7 @@ class Player(BasePlayer):
         self.hubInRegion = HUBS/(GRAPH_SIZE/((SCORE_MEAN/DECAY_FACTOR)**2))
         self.stations = []
         self.weights = state.get_graph().copy()
+        self.num_stations_built = 0
         for i in xrange(GRAPH_SIZE):
             self.weights.node[i]["weight"] = 0
         return
@@ -71,7 +72,24 @@ class Player(BasePlayer):
             station = graph.nodes()[center]
             self.stations += [station]
             commands.append(self.build_command(center))
+            self.num_stations_built += 1
 
+        self.update_graph(state)
+        
+        if (self.profit(state) > 0 and state.get_money() > self.cost()):
+            self.find_hub()
+            #build station()
+
+        pending_orders = state.get_pending_orders()
+        if len(pending_orders) != 0:
+            order = random.choice(pending_orders)
+            path = nx.shortest_path(graph, self.stations[0], order.get_node())
+            if self.path_is_valid(state, path):
+                commands.append(self.send_command(order, path))
+
+        return commands
+    
+    def update_graph(self, state):
         pending_orders = state.get_pending_orders()
         newOrder = None
         for order in pending_orders:
@@ -91,11 +109,14 @@ class Player(BasePlayer):
         if state.get_time() == 999:
             for i in xrange(GRAPH_SIZE):
                 print i, self.weights.node[i]["weight"]
-
-        if len(pending_orders) != 0:
-            order = random.choice(pending_orders)
-            path = nx.shortest_path(graph, self.stations[0], order.get_node())
-            if self.path_is_valid(state, path):
-                commands.append(self.send_command(order, path))
-
-        return commands
+    
+    def profit(self, state):
+        num_orders_fulfilled = ((GAME_LENGTH - state.get_time())*ORDER_CHANCE) / HUBS
+        profit_per_order = SCORE_MEAN - (DECAY_FACTOR * ORDER_VAR)
+        return (num_orders_fulfilled * profit_per_order) - self.cost()
+    
+    def cost(self):
+        return INIT_BUILD_COST * (BUILD_FACTOR ** self.num_stations_built)
+    
+    def find_hub(self):
+        return 0
