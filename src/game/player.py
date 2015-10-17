@@ -54,13 +54,10 @@ class Player(BasePlayer):
             self.build_command. The commands are evaluated in order.
         """
 
-        # We have implemented a naive bot for you that builds a single station
-        # and tries to find the shortest path from it to first pending order.
-        # We recommend making it a bit smarter ;-)
-
         commands = []
         graph = state.get_graph()
 
+        # Build command(s) for first move
         if (state.get_time() == 0 and self.hubInRegion >= 1):
             nodemap = nx.closeness_centrality(graph)
             center = 0
@@ -74,12 +71,16 @@ class Player(BasePlayer):
             commands.append(self.build_command(center))
             self.num_stations_built += 1
 
+        # Update our copy of the graph
         self.update_graph(state)
         
+        # Build additional stations
         if (self.profit(state) > 0 and state.get_money() > self.cost()):
-            self.find_hub()
-            #build station()
+            new_station = self.find_hub()
+            commands.append(self.build_command(new_station))
+            # update graph values with placement of new station
 
+        # Fulfill orders
         pending_orders = state.get_pending_orders()
         if len(pending_orders) != 0:
             order = random.choice(pending_orders)
