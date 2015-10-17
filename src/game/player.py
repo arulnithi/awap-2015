@@ -21,7 +21,7 @@ class Player(BasePlayer):
         """
         self.hubInRegion = HUBS/(GRAPH_SIZE/((SCORE_MEAN/DECAY_FACTOR)**2))
         self.stations = []
-        self.weights = self.get_graph().copy()
+        self.weights = state.get_graph().copy()
         return
 
     # Checks if we can use a given path
