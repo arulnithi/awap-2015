@@ -9,8 +9,6 @@ class Player(BasePlayer):
     name or the base class.
     """
 
-    # You can set up static state here
-    has_built_station = False
 
     def __init__(self, state):
         """
@@ -21,7 +19,9 @@ class Player(BasePlayer):
         state : State
             The initial state of the game. See state.py for more information.
         """
-
+        self.hubInRegion = HUBS/(GRAPH_SIZE/((SCORE_MEAN/DECAY_FACTOR)**2))
+        self.stations = []
+        self.weights = self.get_graph().copy()
         return
 
     # Checks if we can use a given path
@@ -50,18 +50,27 @@ class Player(BasePlayer):
         # and tries to find the shortest path from it to first pending order.
         # We recommend making it a bit smarter ;-)
 
-        graph = state.get_graph()
-        station = graph.nodes()[0]
-
         commands = []
-        if not self.has_built_station:
-            commands.append(self.build_command(station))
-            self.has_built_station = True
+        graph = state.get_graph()
+
+        if (state.get_time() == 0 and self.hubInRegion >= 1):
+            nodemap = nx.closeness_centrality(graph)
+            center = 0
+            closeness = 0
+            for node in nodemap:
+                if nodemap[node] > closeness:
+                    center = node
+                    closeness = nodemap[node]
+            station = graph.nodes()[center]
+            self.stations += [station]
+            commands.append(self.build_command(center))
+
+
 
         pending_orders = state.get_pending_orders()
         if len(pending_orders) != 0:
             order = random.choice(pending_orders)
-            path = nx.shortest_path(graph, station, order.get_node())
+            path = nx.shortest_path(graph, self.stations[0], order.get_node())
             if self.path_is_valid(state, path):
                 commands.append(self.send_command(order, path))
 
