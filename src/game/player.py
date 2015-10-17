@@ -2,6 +2,7 @@ import networkx as nx
 import random
 from base_player import BasePlayer
 from settings import *
+import math
 
 class Player(BasePlayer):
     """
@@ -21,7 +22,9 @@ class Player(BasePlayer):
         """
         self.hubInRegion = HUBS/(GRAPH_SIZE/((SCORE_MEAN/DECAY_FACTOR)**2))
         self.stations = []
-        self.weights = self.get_graph().copy()
+        self.weights = state.get_graph().copy()
+        for i in xrange(GRAPH_SIZE):
+            self.weights.node[i]["weight"] = 0
         return
 
     # Checks if we can use a given path
@@ -31,6 +34,9 @@ class Player(BasePlayer):
             if graph.edge[path[i]][path[i + 1]]['in_use']:
                 return False
         return True
+
+    def normal(self, distance):
+        return 1/((ORDER_VAR*2*math.pi)**0.5)*math.exp(-(distance**2/(2*ORDER_VAR)))
 
     def step(self, state):
         """
@@ -65,9 +71,26 @@ class Player(BasePlayer):
             self.stations += [station]
             commands.append(self.build_command(center))
 
-
-
         pending_orders = state.get_pending_orders()
+        newOrder = None
+        for order in pending_orders:
+            if order.get_time_created() == state.get_time():
+                newOrder = order
+                break
+        if newOrder != None:
+            successors = nx.bfs_successors(self.weights, newOrder.node)
+            nodes = [newOrder.node]
+            for distance in xrange(int(2*ORDER_VAR)):
+                nextNodes = []
+                for node in nodes:
+                    self.weights.node[node]["weight"] += self.normal(distance)
+                    if node in successors:
+                        nextNodes.extend(successors[node])
+                nodes = nextNodes
+        if state.get_time() == 999:
+            for i in xrange(GRAPH_SIZE):
+                print i, self.weights.node[i]["weight"]
+
         if len(pending_orders) != 0:
             order = random.choice(pending_orders)
             path = nx.shortest_path(graph, self.stations[0], order.get_node())
